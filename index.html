@@ -32,7 +32,7 @@
 
       // Load the plane model using OBJLoader
       const objLoader = new THREE.OBJLoader();
-      objLoader.load('path/to/your/plane_model.obj', function (object) {
+      objLoader.load('./plane_model.obj', function (object) {
         plane = object;
         plane.scale.set(0.5, 0.5, 0.5); // Adjust scale
         plane.position.set(0, 0, 0);    // Adjust position
@@ -57,7 +57,7 @@
 
       // Load building textures
       const textureLoader = new THREE.TextureLoader();
-      const buildingTexture = textureLoader.load('path/to/your/building_texture.jpg');
+      const buildingTexture = textureLoader.load('./building_texture.jpg');
 
       // Generate buildings with textures
       for (let i = 0; i < 20; i++) {

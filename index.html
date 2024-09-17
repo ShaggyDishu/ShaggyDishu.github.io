@@ -3,19 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Test Plane Model</title>
+  <title>Plane Dodging Game</title>
   <style>
     body { margin: 0; overflow: hidden; }
     canvas { display: block; }
   </style>
 </head>
 <body>
+  <!-- Include Three.js library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r110/three.min.js"></script>
+  <!-- Include OBJLoader -->
   <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r110/examples/js/loaders/OBJLoader.js"></script>
-  
+
   <script>
-    let scene, camera, renderer, plane;
-    
+    let scene, camera, renderer, plane, buildings = [];
+    let speed = 0.1, moveSpeed = 0.5, boundaries = { x: 4.5, y: 2.5 };
+    let planeModelLoaded = false;
+
     function init() {
       scene = new THREE.Scene();
       scene.background = new THREE.Color(0x87CEEB);
@@ -31,9 +35,10 @@
       const objLoader = new THREE.OBJLoader();
       objLoader.load('path/to/your/plane_model.obj', function (object) {
         plane = object;
-        plane.scale.set(0.5, 0.5, 0.5); // Adjust scale
-        plane.position.set(0, 0, 0);    // Adjust position
+        plane.scale.set(0.5, 0.5, 0.5); // Adjust scale as needed
+        plane.position.set(0, 0, 0);    // Initial position
         scene.add(plane);
+        planeModelLoaded = true;
       }, undefined, function (error) {
         console.error('An error happened', error);
       });
@@ -47,13 +52,75 @@
       directionalLight.position.set(1, 1, 1).normalize();
       scene.add(directionalLight);
 
+      // Load building texture
+      const textureLoader = new THREE.TextureLoader();
+      const buildingTexture = textureLoader.load('path/to/your/building_texture.jpg');
+
+      // Generate buildings with texture
+      for (let i = 0; i < 20; i++) {
+        createBuilding(Math.random() * 9 - 4.5, -2.5, -10 - i * 5, buildingTexture);
+      }
+
       animate();
+    }
+
+    // Create a building with texture
+    function createBuilding(x, y, z, texture) {
+      const buildingGeometry = new THREE.BoxGeometry(1, Math.random() * 3 + 1, 1);
+      const buildingMaterial = new THREE.MeshBasicMaterial({ map: texture });
+      const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
+      building.position.set(x, y, z);
+      scene.add(building);
+      buildings.push(building);
     }
 
     function animate() {
       requestAnimationFrame(animate);
-      renderer.render(scene, camera);
+
+      // Only animate if the plane model is loaded
+      if (planeModelLoaded) {
+        buildings.forEach(building => {
+          building.position.z += speed;
+          if (building.position.z > camera.position.z) {
+            building.position.z = -50;
+            building.position.x = Math.random() * 9 - 4.5;
+            building.position.y = -2.5;
+          }
+
+          // Collision detection
+          if (plane.position.distanceTo(building.position) < 1.5) {
+            alert("Game Over! Refresh to Restart.");
+            resetGame();
+          }
+        });
+
+        renderer.render(scene, camera);
+      }
     }
+
+    function resetGame() {
+      plane.position.set(0, 0, 0);
+      buildings.forEach(building => building.position.z = Math.random() * -50);
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (planeModelLoaded) {
+        switch (e.key) {
+          case 'ArrowUp':
+            if (plane.position.y < boundaries.y) plane.position.y += moveSpeed;
+            break;
+          case 'ArrowDown':
+            if (plane.position.y > -boundaries.y) plane.position.y -= moveSpeed;
+            break;
+          case 'ArrowLeft':
+            if (plane.position.x > -boundaries.x) plane.position.x -= moveSpeed;
+            break;
+          case 'ArrowRight':
+            if (plane.position.x < boundaries.x) plane.position.x += moveSpeed;
+            break;
+        }
+      }
+    });
 
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;

@@ -10,11 +10,9 @@
   </style>
 </head>
 <body>
-  <!-- Include Three.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r110/three.min.js"></script>
-  <!-- Include the correct version of OBJLoader for r110 -->
   <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r110/examples/js/loaders/OBJLoader.js"></script>
-
+  
   <script>
     let scene, camera, renderer, plane, buildings = [];
     let speed = 0.1, moveSpeed = 0.5, boundaries = { x: 4.5, y: 2.5 };
@@ -26,6 +24,7 @@
 
       camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
       camera.position.set(0, 0, 5);
+      camera.lookAt(scene.position);
 
       renderer = new THREE.WebGLRenderer();
       renderer.setSize(window.innerWidth, window.innerHeight);
@@ -33,21 +32,32 @@
 
       // Load the plane model using OBJLoader
       const objLoader = new THREE.OBJLoader();
-      objLoader.load('./plane.obj', function (object) {
+      objLoader.load('path/to/your/plane_model.obj', function (object) {
         plane = object;
-        plane.scale.set(0.5, 0.5, 0.5); // Adjust plane size
-        plane.position.set(0, 0, 0);    // Initial position
+        plane.scale.set(0.5, 0.5, 0.5); // Adjust scale
+        plane.position.set(0, 0, 0);    // Adjust position
         scene.add(plane);
         planeModelLoaded = true;
+      }, undefined, function (error) {
+        console.error('An error happened', error);
       });
 
       // Add ambient light
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
       scene.add(ambientLight);
+
+      // Add directional light
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+      directionalLight.position.set(1, 1, 1).normalize();
+      scene.add(directionalLight);
+
+      // Add a grid helper
+      const gridHelper = new THREE.GridHelper(10, 10);
+      scene.add(gridHelper);
 
       // Load building textures
       const textureLoader = new THREE.TextureLoader();
-      const buildingTexture = textureLoader.load('./building.jpg');
+      const buildingTexture = textureLoader.load('path/to/your/building_texture.jpg');
 
       // Generate buildings with textures
       for (let i = 0; i < 20; i++) {

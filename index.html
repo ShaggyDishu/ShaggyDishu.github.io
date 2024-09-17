@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>3D Plane Dodging Game</title>
+  <title>Test Plane Model</title>
   <style>
     body { margin: 0; overflow: hidden; }
     canvas { display: block; }
@@ -14,17 +14,14 @@
   <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r110/examples/js/loaders/OBJLoader.js"></script>
   
   <script>
-    let scene, camera, renderer, plane, buildings = [];
-    let speed = 0.1, moveSpeed = 0.5, boundaries = { x: 4.5, y: 2.5 };
-    let planeModelLoaded = false;
-
+    let scene, camera, renderer, plane;
+    
     function init() {
       scene = new THREE.Scene();
       scene.background = new THREE.Color(0x87CEEB);
 
       camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
       camera.position.set(0, 0, 5);
-      camera.lookAt(scene.position);
 
       renderer = new THREE.WebGLRenderer();
       renderer.setSize(window.innerWidth, window.innerHeight);
@@ -32,12 +29,11 @@
 
       // Load the plane model using OBJLoader
       const objLoader = new THREE.OBJLoader();
-      objLoader.load('./plane_model.obj', function (object) {
+      objLoader.load('path/to/your/plane_model.obj', function (object) {
         plane = object;
         plane.scale.set(0.5, 0.5, 0.5); // Adjust scale
         plane.position.set(0, 0, 0);    // Adjust position
         scene.add(plane);
-        planeModelLoaded = true;
       }, undefined, function (error) {
         console.error('An error happened', error);
       });
@@ -51,79 +47,13 @@
       directionalLight.position.set(1, 1, 1).normalize();
       scene.add(directionalLight);
 
-      // Add a grid helper
-      const gridHelper = new THREE.GridHelper(10, 10);
-      scene.add(gridHelper);
-
-      // Load building textures
-      const textureLoader = new THREE.TextureLoader();
-      const buildingTexture = textureLoader.load('./building_texture.jpg');
-
-      // Generate buildings with textures
-      for (let i = 0; i < 20; i++) {
-        createBuilding(Math.random() * 9 - 4.5, -2.5, -10 - i * 5, buildingTexture);
-      }
-
       animate();
-    }
-
-    // Create a building with a texture
-    function createBuilding(x, y, z, texture) {
-      const buildingGeometry = new THREE.BoxGeometry(1, Math.random() * 3 + 1, 1);
-      const buildingMaterial = new THREE.MeshBasicMaterial({ map: texture });
-      const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
-      building.position.set(x, y, z);
-      scene.add(building);
-      buildings.push(building);
     }
 
     function animate() {
       requestAnimationFrame(animate);
-
-      // Only animate if the plane model is loaded
-      if (planeModelLoaded) {
-        buildings.forEach(building => {
-          building.position.z += speed;
-          if (building.position.z > camera.position.z) {
-            building.position.z = -50;
-            building.position.x = Math.random() * 9 - 4.5;
-            building.position.y = -2.5;
-          }
-
-          // Collision detection
-          if (plane.position.distanceTo(building.position) < 1.5) {
-            alert("Game Over! Refresh to Restart.");
-            resetGame();
-          }
-        });
-
-        renderer.render(scene, camera);
-      }
+      renderer.render(scene, camera);
     }
-
-    function resetGame() {
-      plane.position.set(0, 0, 0);
-      buildings.forEach(building => building.position.z = Math.random() * -50);
-    }
-
-    document.addEventListener('keydown', (e) => {
-      if (planeModelLoaded) {
-        switch (e.key) {
-          case 'ArrowUp':
-            if (plane.position.y < boundaries.y) plane.position.y += moveSpeed;
-            break;
-          case 'ArrowDown':
-            if (plane.position.y > -boundaries.y) plane.position.y -= moveSpeed;
-            break;
-          case 'ArrowLeft':
-            if (plane.position.x > -boundaries.x) plane.position.x -= moveSpeed;
-            break;
-          case 'ArrowRight':
-            if (plane.position.x < boundaries.x) plane.position.x += moveSpeed;
-            break;
-        }
-      }
-    });
 
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;

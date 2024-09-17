@@ -10,11 +10,11 @@
   </style>
 </head>
 <body>
-  <!-- Include Three.js and OBJLoader -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js"></script>
-  <script src="https://threejs.org/examples/js/loaders/OBJLoader.js"></script>
+  <!-- Import Three.js and OBJLoader using ES6 Modules -->
+  <script type="module">
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.150.0/build/three.module.js';
+    import { OBJLoader } from 'https://cdn.jsdelivr.net/npm/three@0.150.0/examples/jsm/loaders/OBJLoader.js';
 
-  <script>
     let scene, camera, renderer, plane, buildings = [];
     let speed = 0.1, moveSpeed = 0.5, boundaries = { x: 4.5, y: 2.5 };
     let planeModelLoaded = false;
@@ -30,8 +30,8 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
       document.body.appendChild(renderer.domElement);
 
-      // Load the plane model using OBJLoader
-      const objLoader = new THREE.OBJLoader();
+      // Use OBJLoader to load the plane model
+      const objLoader = new OBJLoader();
       objLoader.load('./plane.obj', function (object) {
         plane = object;
         plane.scale.set(0.5, 0.5, 0.5); // Adjust plane size
@@ -40,15 +40,12 @@
         planeModelLoaded = true;
       });
 
-      // Add ambient light
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
       scene.add(ambientLight);
 
-      // Load building textures
       const textureLoader = new THREE.TextureLoader();
       const buildingTexture = textureLoader.load('./building.jpg');
 
-      // Generate buildings with textures
       for (let i = 0; i < 20; i++) {
         createBuilding(Math.random() * 9 - 4.5, -2.5, -10 - i * 5, buildingTexture);
       }
@@ -56,7 +53,6 @@
       animate();
     }
 
-    // Create a building with a texture
     function createBuilding(x, y, z, texture) {
       const buildingGeometry = new THREE.BoxGeometry(1, Math.random() * 3 + 1, 1);
       const buildingMaterial = new THREE.MeshBasicMaterial({ map: texture });
@@ -69,7 +65,6 @@
     function animate() {
       requestAnimationFrame(animate);
 
-      // Only animate if the plane model is loaded
       if (planeModelLoaded) {
         buildings.forEach(building => {
           building.position.z += speed;
@@ -79,7 +74,6 @@
             building.position.y = -2.5;
           }
 
-          // Collision detection
           if (plane.position.distanceTo(building.position) < 1.5) {
             alert("Game Over! Refresh to Restart.");
             resetGame();

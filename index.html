@@ -3,127 +3,141 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Plane Dodging Game</title>
+  <title>Dinosaur Run Game</title>
   <style>
-    body { margin: 0; overflow: hidden; }
-    canvas { display: block; }
+    body {
+      margin: 0;
+      background: #f5f5f5;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+      background: #fff;
+      margin: 0 auto;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    #offlineMessage {
+      display: none;
+      text-align: center;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 24px;
+      color: #333;
+    }
   </style>
 </head>
 <body>
-  <!-- Include Three.js library -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r110/three.min.js"></script>
-  <!-- Include OBJLoader -->
-  <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r110/examples/js/loaders/OBJLoader.js"></script>
-  
+  <canvas id="gameCanvas"></canvas>
+  <div id="offlineMessage">No Internet Connection. Press Space to Start the Game.</div>
+
   <script>
-    let scene, camera, renderer, plane, buildings = [];
-    let speed = 0.1, moveSpeed = 0.5, boundaries = { y: 2.5 };
-    let planeModelLoaded = false;
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const offlineMessage = document.getElementById('offlineMessage');
+    const dinoWidth = 50, dinoHeight = 50, gravity = 0.6, jumpStrength = -12, dinoColor = '#000', obstacleColor = '#f00';
 
-    function init() {
-      scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x87CEEB);
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-      camera = new THREE.OrthographicCamera(
-        -5, 5, // left, right
-        2.5, -2.5, // top, bottom
-        0.1, 1000 // near, far
-      );
-      camera.position.set(0, 0, 10);
-      camera.lookAt(0, 0, 0);
+    let dino = { x: 50, y: canvas.height - dinoHeight, width: dinoWidth, height: dinoHeight, dy: 0, isJumping: false };
+    let obstacles = [];
+    let gameInterval, obstacleInterval;
+    let score = 0;
 
-      renderer = new THREE.WebGLRenderer();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      document.body.appendChild(renderer.domElement);
-
-      // Load the plane model using OBJLoader
-      const objLoader = new THREE.OBJLoader();
-      objLoader.load('path/to/your/plane_model.obj', function (object) {
-        plane = object;
-        plane.scale.set(0.5, 0.5, 0.5); // Adjust scale
-        plane.position.set(0, 0, 0);    // Initial position
-        scene.add(plane);
-        planeModelLoaded = true;
-      }, undefined, function (error) {
-        console.error('An error happened', error);
-      });
-
-      // Load building texture
-      const textureLoader = new THREE.TextureLoader();
-      const buildingTexture = textureLoader.load('path/to/your/building_texture.jpg');
-
-      // Generate buildings with texture
-      for (let i = 0; i < 20; i++) {
-        createBuilding(Math.random() * 10 - 5, Math.random() * 4 - 2, -10 - i * 5, buildingTexture);
-      }
-
-      animate();
+    function startGame() {
+      document.addEventListener('keydown', handleKeydown);
+      offlineMessage.style.display = 'none';
+      gameInterval = setInterval(updateGame, 20);
+      obstacleInterval = setInterval(createObstacle, 2000);
     }
 
-    // Create a building with texture
-    function createBuilding(x, y, z, texture) {
-      const buildingGeometry = new THREE.BoxGeometry(1, Math.random() * 3 + 1, 1);
-      const buildingMaterial = new THREE.MeshBasicMaterial({ map: texture });
-      const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
-      building.position.set(x, y, z);
-      scene.add(building);
-      buildings.push(building);
+    function endGame() {
+      clearInterval(gameInterval);
+      clearInterval(obstacleInterval);
+      document.removeEventListener('keydown', handleKeydown);
+      offlineMessage.style.display = 'block';
     }
 
-    function animate() {
-      requestAnimationFrame(animate);
-
-      if (planeModelLoaded) {
-        buildings.forEach(building => {
-          building.position.x -= speed;
-          if (building.position.x < -5) {
-            building.position.x = 5;
-            building.position.y = Math.random() * 4 - 2;
-          }
-
-          // Collision detection
-          if (plane.position.distanceTo(building.position) < 1.5) {
-            alert("Game Over! Refresh to Restart.");
-            resetGame();
-          }
-        });
-
-        renderer.render(scene, camera);
+    function handleKeydown(e) {
+      if (e.code === 'Space' && !dino.isJumping) {
+        dino.isJumping = true;
+        dino.dy = jumpStrength;
       }
     }
 
-    function resetGame() {
-      plane.position.set(0, 0, 0);
-      buildings.forEach(building => {
-        building.position.x = Math.random() * 10 - 5;
-        building.position.y = Math.random() * 4 - 2;
-        building.position.z = -Math.random() * 50;
-      });
+    function createObstacle() {
+      const obstacleWidth = 20;
+      const obstacleHeight = Math.random() * (canvas.height / 2) + 20;
+      obstacles.push({ x: canvas.width, y: canvas.height - obstacleHeight, width: obstacleWidth, height: obstacleHeight });
     }
 
-    document.addEventListener('keydown', (e) => {
-      if (planeModelLoaded) {
-        switch (e.key) {
-          case 'ArrowUp':
-            if (plane.position.y < boundaries.y) plane.position.y += moveSpeed;
-            break;
-          case 'ArrowDown':
-            if (plane.position.y > -boundaries.y) plane.position.y -= moveSpeed;
-            break;
+    function updateGame() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Dino physics
+      if (dino.y + dino.height < canvas.height) {
+        dino.dy += gravity;
+      } else {
+        dino.dy = 0;
+        dino.isJumping = false;
+      }
+      dino.y += dino.dy;
+
+      // Draw dino
+      ctx.fillStyle = dinoColor;
+      ctx.fillRect(dino.x, dino.y, dino.width, dino.height);
+
+      // Update and draw obstacles
+      obstacles.forEach((obstacle, index) => {
+        obstacle.x -= 5;
+        ctx.fillStyle = obstacleColor;
+        ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+
+        // Collision detection
+        if (dino.x < obstacle.x + obstacle.width &&
+            dino.x + dino.width > obstacle.x &&
+            dino.y < obstacle.y + obstacle.height &&
+            dino.y + dino.height > obstacle.y) {
+          endGame();
         }
+
+        // Remove off-screen obstacles
+        if (obstacle.x + obstacle.width < 0) {
+          obstacles.splice(index, 1);
+          score++;
+        }
+      });
+
+      // Draw score
+      ctx.fillStyle = '#000';
+      ctx.font = '20px Arial';
+      ctx.fillText('Score: ' + score, 10, 20);
+    }
+
+    function checkOnlineStatus() {
+      if (navigator.onLine) {
+        offlineMessage.style.display = 'none';
+        if (gameInterval) {
+          startGame();
+        }
+      } else {
+        offlineMessage.style.display = 'block';
+        endGame();
       }
-    });
+    }
 
+    window.addEventListener('online', checkOnlineStatus);
+    window.addEventListener('offline', checkOnlineStatus);
     window.addEventListener('resize', () => {
-      camera.left = -window.innerWidth / window.innerHeight * 2.5;
-      camera.right = window.innerWidth / window.innerHeight * 2.5;
-      camera.top = 2.5;
-      camera.bottom = -2.5;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
     });
 
-    init();
+    checkOnlineStatus();
   </script>
 </body>
 </html>
